@@ -2,6 +2,8 @@ add_custom_target(clean-all
   COMMAND ${CMAKE_COMMAND} --build . --target clean # --config $<CONFIG>
   )
 
+set(PKGCONF_PATH "$ENV{PKG_CONFIG_PATH}")
+
 # ================================================================================
 
 set(LIBOPUS_TARGET "libopus" CACHE INTERNAL "")
@@ -35,6 +37,8 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opus
   DEPENDS ${LIBOPUS_SOURCE_FILES} ${LIBOPUS_HEADER_FILES})
 
+set(PKGCONF_PATH "${LIBOPUS_LIBDIR}/pkgconfig:${PKGCONF_PATH}")
+
 add_dependencies(clean-all ${LIBOPUS_TARGET}-clean)
 
 add_custom_target(${LIBOPUS_TARGET}-clean
@@ -60,9 +64,11 @@ file(GLOB_RECURSE LIBOGG_SOURCE_FILES
 
 add_custom_command(
   OUTPUT ${LIBOGG_SO}
-  COMMAND mkdir -p build && cd build && cmake .. -DBUILD_SHARED_LIBS=1 --install-prefix="${CMAKE_CURRENT_SOURCE_DIR}/ogg/build/build" && make && make test && make install
+  COMMAND PKG_CONFIG_PATH="${PKGCONF_PATH}" mkdir -p build && cd build && cmake .. -DBUILD_SHARED_LIBS=1 --install-prefix="${CMAKE_CURRENT_SOURCE_DIR}/ogg/build/build" && make && make test && make install
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ogg
-  DEPENDS ${LIBOGG_SOURCE_FILES} ${LIBOGG_HEADER_FILES})
+  DEPENDS ${LIBOGG_SOURCE_FILES} ${LIBOGG_HEADER_FILES} ${LIBOPUS_TARGET})
+
+set(PKGCONF_PATH "${LIBOGG_LIBDIR}/pkgconfig:${PKGCONF_PATH}")
 
 add_dependencies(clean-all ${LIBOGG_TARGET}-clean)
 
@@ -74,24 +80,29 @@ add_custom_target(${LIBOGG_TARGET}-clean
 
 set(OPUSFILE_TARGET "libopusfile" CACHE INTERNAL "")
 
-set(OPUSFILE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/build/build" CACHE INTERNAL "")
+set(OPUSFILE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/build" CACHE INTERNAL "")
 set(OPUSFILE_INCLUDE_DIR "${OPUSFILE_BUILD_DIR}/include" CACHE INTERNAL "")
 set(OPUSFILE_LIBDIR "${OPUSFILE_BUILD_DIR}/lib" CACHE INTERNAL "")
 set(OPUSFILE_SO "${OPUSFILE_LIBDIR}/libopusfile.so" CACHE INTERNAL "")
 
 file(GLOB_RECURSE OPUSFILE_SOURCE_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/src/*.c")
-   file(GLOB_RECURSE OPUSFILE_HEADER_FILES
+
+file(GLOB_RECURSE OPUSFILE_HEADER_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/src/*.h")
 
-   add_dependencies(${MAIN_OUT} ${OPUSFILE_TARGET})
-   add_custom_target(${OPUSFILE_TARGET} DEPENDS ${OPUSFILE_SO})
+set(LIBOPUSFILE_OBJECT_FILES ${LIBOPUSFILE_SOURCE_FILES})
+list(TRANSFORM LIBOPUSFILE_OBJECT_FILES REPLACE "\.c$" ".o")
+
+add_dependencies(${MAIN_OUT} ${OPUSFILE_TARGET})
+add_custom_target(${OPUSFILE_TARGET} DEPENDS ${OPUSFILE_SO})
 
 add_custom_command(
   OUTPUT ${OPUSFILE_SO}
-  COMMAND mkdir -p build && cd build && cmake .. -DBUILD_SHARED_LIBS=1 --install-prefix="${CMAKE_CURRENT_SOURCE_DIR}/opusfile/build/build" && make && make test && make install
+  COMMAND PKG_CONFIG_PATH="${PKGCONF_PATH}" ./autogen.sh && ./configure --prefix="${LIBOPUSFILE_BUILD_DIR}"
+          --exec-prefix="${LIBOPUSFILE_BUILD_DIR}" && make && make check
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opusfile
-  DEPENDS ${OPUSFILE_SOURCE_FILES} ${OPUSFILE_HEADER_FILES})
+  DEPENDS ${OPUSFILE_SOURCE_FILES} ${OPUSFILE_HEADER_FILES} ${LIBOPUS_TARGET} ${LIBOGG_TARGET})
 
 add_dependencies(clean-all ${OPUSFILE_TARGET}-clean)
 

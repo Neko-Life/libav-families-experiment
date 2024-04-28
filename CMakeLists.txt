@@ -34,11 +34,13 @@ target_link_libraries(
 
 # Specify includes
 target_include_directories(
-  ${MAIN_OUT} PRIVATE include # Remember to add the include directories of any
-                              # other libraries too
+  ${MAIN_OUT} PRIVATE include ${LIBOPUS_INCLUDE_DIR} ${LIBOGG_INCLUDE_DIR}
+                      ${LIBOPUSFILE_INCLUDE_DIR}
+  # Remember to add the include directories of any other libraries too
 )
 
-target_link_directories(${MAIN_OUT} PRIVATE ${LIBOPUS_LIBDIR})
+target_link_directories(${MAIN_OUT} PRIVATE ${LIBOPUS_LIBDIR} ${LIBOGG_LIB_DIR}
+                        ${LIBOPUSFILE_LIB_DIR})
 
 # Set C++ version
 set_target_properties(
