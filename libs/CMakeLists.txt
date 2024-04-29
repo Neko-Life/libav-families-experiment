@@ -12,28 +12,21 @@ set(LIBOPUS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opus/build" CACHE INTERNAL ""
 set(LIBOPUS_INCLUDE_DIR "${LIBOPUS_BUILD_DIR}/include" CACHE INTERNAL "")
 set(LIBOPUS_LIBDIR "${LIBOPUS_BUILD_DIR}/lib" CACHE INTERNAL "")
 set(LIBOPUS_SO "${LIBOPUS_LIBDIR}/libopus.so" CACHE INTERNAL "")
+list(APPEND LIBS_TARGETS ${LIBOPUS_SO})
 
 file(GLOB_RECURSE LIBOPUS_SOURCE_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opus/src/*.c")
+
 file(GLOB_RECURSE LIBOPUS_HEADER_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opus/src/*.h")
-
-set(LIBOPUS_OBJECT_FILES ${LIBOPUS_SOURCE_FILES})
-list(TRANSFORM LIBOPUS_OBJECT_FILES REPLACE "\.c$" ".o")
 
 add_dependencies(${MAIN_OUT} ${LIBOPUS_TARGET})
 add_custom_target(${LIBOPUS_TARGET} DEPENDS ${LIBOPUS_SO})
 
 add_custom_command(
   OUTPUT ${LIBOPUS_SO}
-  COMMAND make install
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opus
-  DEPENDS ${LIBOPUS_OBJECT_FILES})
-
-add_custom_command(
-  OUTPUT ${LIBOPUS_OBJECT_FILES}
   COMMAND ./autogen.sh && ./configure --prefix="${LIBOPUS_BUILD_DIR}"
-          --exec-prefix="${LIBOPUS_BUILD_DIR}" && make && make check
+          --exec-prefix="${LIBOPUS_BUILD_DIR}" && make && make check && make install
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opus
   DEPENDS ${LIBOPUS_SOURCE_FILES} ${LIBOPUS_HEADER_FILES})
 
@@ -42,7 +35,7 @@ set(PKGCONF_PATH "${LIBOPUS_LIBDIR}/pkgconfig:${PKGCONF_PATH}")
 add_dependencies(clean-all ${LIBOPUS_TARGET}-clean)
 
 add_custom_target(${LIBOPUS_TARGET}-clean
-  COMMAND rm -rf build
+  COMMAND make uninstall && make clean
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opus)
 
 # ================================================================================
@@ -53,14 +46,16 @@ set(LIBOGG_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ogg/build/build" CACHE INTERNA
 set(LIBOGG_INCLUDE_DIR "${LIBOGG_BUILD_DIR}/include" CACHE INTERNAL "")
 set(LIBOGG_LIBDIR "${LIBOGG_BUILD_DIR}/lib" CACHE INTERNAL "")
 set(LIBOGG_SO "${LIBOGG_LIBDIR}/libogg.so" CACHE INTERNAL "")
+list(APPEND LIBS_TARGETS ${LIBOGG_SO})
 
 file(GLOB_RECURSE LIBOGG_SOURCE_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/ogg/src/*.c")
-   file(GLOB_RECURSE LIBOGG_HEADER_FILES
+
+file(GLOB_RECURSE LIBOGG_HEADER_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/ogg/src/*.h")
 
-   add_dependencies(${MAIN_OUT} ${LIBOGG_TARGET})
-   add_custom_target(${LIBOGG_TARGET} DEPENDS ${LIBOGG_SO})
+add_dependencies(${MAIN_OUT} ${LIBOGG_TARGET})
+add_custom_target(${LIBOGG_TARGET} DEPENDS ${LIBOGG_SO})
 
 add_custom_command(
   OUTPUT ${LIBOGG_SO}
@@ -84,6 +79,7 @@ set(OPUSFILE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/build" CACHE INTERN
 set(OPUSFILE_INCLUDE_DIR "${OPUSFILE_BUILD_DIR}/include" CACHE INTERNAL "")
 set(OPUSFILE_LIBDIR "${OPUSFILE_BUILD_DIR}/lib" CACHE INTERNAL "")
 set(OPUSFILE_SO "${OPUSFILE_LIBDIR}/libopusfile.so" CACHE INTERNAL "")
+list(APPEND LIBS_TARGETS ${OPUSFILE_SO})
 
 file(GLOB_RECURSE OPUSFILE_SOURCE_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/src/*.c")
@@ -91,21 +87,24 @@ file(GLOB_RECURSE OPUSFILE_SOURCE_FILES
 file(GLOB_RECURSE OPUSFILE_HEADER_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/opusfile/src/*.h")
 
-set(LIBOPUSFILE_OBJECT_FILES ${LIBOPUSFILE_SOURCE_FILES})
-list(TRANSFORM LIBOPUSFILE_OBJECT_FILES REPLACE "\.c$" ".o")
-
 add_dependencies(${MAIN_OUT} ${OPUSFILE_TARGET})
 add_custom_target(${OPUSFILE_TARGET} DEPENDS ${OPUSFILE_SO})
 
 add_custom_command(
   OUTPUT ${OPUSFILE_SO}
-  COMMAND PKG_CONFIG_PATH="${PKGCONF_PATH}" ./autogen.sh && ./configure --prefix="${LIBOPUSFILE_BUILD_DIR}"
-          --exec-prefix="${LIBOPUSFILE_BUILD_DIR}" && make && make check
+  COMMAND PKG_CONFIG_PATH="${PKGCONF_PATH}" ./autogen.sh && ./configure --prefix="${OPUSFILE_BUILD_DIR}"
+          --exec-prefix="${OPUSFILE_BUILD_DIR}" && make && make check && make install
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opusfile
   DEPENDS ${OPUSFILE_SOURCE_FILES} ${OPUSFILE_HEADER_FILES} ${LIBOPUS_TARGET} ${LIBOGG_TARGET})
 
 add_dependencies(clean-all ${OPUSFILE_TARGET}-clean)
 
 add_custom_target(${OPUSFILE_TARGET}-clean
-  COMMAND rm -rf build
+  COMMAND make uninstall && make clean
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/opusfile)
+
+# ================================================================================
+
+if (LIBS_TARGETS)
+  add_custom_target(libs DEPENDS ${LIBS_TARGETS})
+endif()
